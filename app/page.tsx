@@ -23,9 +23,17 @@ type Player = {
   name: string;
 };
 
+type Result = {
+  player_number: number;
+  player_name: string;
+  vote_count: number;
+};
+
 export default function Home() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
+  const [results, setResults] = useState<Result[]>([]);
+const [resultsLoading, setResultsLoading] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState<number | null>(null);
   const [selectedPlayer, setSelectedPlayer] = useState<number | null>(null);
   const [message, setMessage] = useState("");
@@ -89,7 +97,32 @@ export default function Home() {
     }
   }
 
-  const currentMatch = matches.find((m) => m.id === selectedMatch);
+  const currentMatch = matches.find((m) => m.id === selectedMatch);useEffect(() => {
+  async function loadResults() {
+    if (!selectedMatch || !currentMatch?.results_revealed) {
+      setResults([]);
+      return;
+    }
+
+    setResultsLoading(true);
+
+    const { data, error } = await supabase.rpc("get_match_results", {
+      p_match_id: selectedMatch,
+    });
+
+    if (error) {
+      setMessage("Impossible de charger les résultats.");
+      setResults([]);
+    } else {
+      setResults(data || []);
+    }
+
+    setResultsLoading(false);
+  }
+
+  loadResults();
+}, [selectedMatch, currentMatch?.results_revealed]);
+  
   const currentPlayers = players.filter((p) => p.match_id === selectedMatch);
 
   return (
@@ -130,7 +163,31 @@ export default function Home() {
             <h2>{currentMatch.title}</h2>
 
             {currentMatch.results_revealed ? (
-              <p>Les résultats de ce match seront affichés ici prochainement.</p>
+  <div className="results">
+    <h3>🏆 CLASSEMENT DU MATCH</h3>
+
+    {resultsLoading ? (
+      <p>Chargement du classement...</p>
+    ) : results.length === 0 ? (
+      <p>Aucun résultat disponible.</p>
+    ) : (
+      <div className="results-list">
+        {results.map((result, index) => (
+          <div className={`result-card rank-${index + 1}`} key={result.player_number}>
+            <span className="result-rank">
+              {index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `${index + 1}.`}
+            </span>
+            <span className="result-name">
+              #{result.player_number} {result.player_name}
+            </span>
+            <span className="result-votes">
+              {result.vote_count} vote{result.vote_count > 1 ? "s" : ""}
+            </span>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
             ) : !currentMatch.voting_open ? (
               <p>Le vote pour ce match n'est pas ouvert pour le moment.</p>
             ) : alreadyVoted ? (
