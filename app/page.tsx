@@ -76,34 +76,35 @@ setAlreadyVoted(
   localStorage.getItem(`vote-match-${selectedMatch}-${currentRound}`) === "done"
 );
     }
-  }, [selectedMatch]);
+ }, [selectedMatch, matches]);
+   
+async function submitVote() {
+  if (!selectedMatch || !selectedPlayer) return;
 
-  async function submitVote() {
-    if (!selectedMatch || !selectedPlayer) return;
-
-    if (alreadyVoted) {
-      setMessage("Un vote a déjà été enregistré sur cet appareil pour ce match.");
-      return;
-    }
-
-    const { error } = await supabase.from("votes").insert({
-      match_id: selectedMatch,
-      player_id: selectedPlayer,
-    });
-
-    if (error) {
-  setMessage("Le vote n'a pas pu être enregistré. Vérifie que le vote est ouvert.");
-} else {
-  const currentRound = matches.find((m) => m.id === selectedMatch)?.vote_round ?? 1;
-
-  localStorage.setItem(`vote-match-${selectedMatch}-${currentRound}`, "done");
-
-  setAlreadyVoted(true);
-  setMessage("Ton vote a bien été enregistré ! 💗");
-  setSelectedPlayer(null);
-}
-    }
+  if (alreadyVoted) {
+    setMessage("Un vote a déjà été enregistré sur cet appareil pour ce match.");
+    return;
   }
+
+  const { error } = await supabase.from("votes").insert({
+    match_id: selectedMatch,
+    player_id: selectedPlayer,
+  });
+
+  if (error) {
+    setMessage("Le vote n'a pas pu être enregistré. Vérifie que le vote est ouvert.");
+  } else {
+    const currentRound =
+      matches.find((m) => m.id === selectedMatch)?.vote_round ?? 1;
+
+    localStorage.setItem(`vote-match-${selectedMatch}-${currentRound}`, "done");
+
+    setAlreadyVoted(true);
+    setMessage("Ton vote a bien été enregistré ! 💗");
+    setSelectedPlayer(null);
+  }
+}
+
 
   const currentMatch = matches.find((m) => m.id === selectedMatch);useEffect(() => {
   async function loadResults() {
