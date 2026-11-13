@@ -69,9 +69,12 @@ const [resultsLoading, setResultsLoading] = useState(false);
     if (selectedMatch !== null) {
       setSelectedPlayer(null);
       setMessage("");
-      setAlreadyVoted(
-        localStorage.getItem(`vote-match-${selectedMatch}`) === "done"
-      );
+      const currentRound =
+  matches.find((m) => m.id === selectedMatch)?.vote_round ?? 1;
+
+setAlreadyVoted(
+  localStorage.getItem(`vote-match-${selectedMatch}-${currentRound}`) === "done"
+);
     }
   }, [selectedMatch]);
 
