@@ -14,6 +14,7 @@ type Match = {
   title: string;
   voting_open: boolean;
   results_revealed: boolean;
+  vote_round: number;
 };
 
 type Player = {
@@ -88,12 +89,16 @@ const [resultsLoading, setResultsLoading] = useState(false);
     });
 
     if (error) {
-      setMessage("Le vote n'a pas pu être enregistré. Vérifie que le vote est ouvert.");
-    } else {
-      localStorage.setItem(`vote-match-${selectedMatch}`, "done");
-      setAlreadyVoted(true);
-      setMessage("Ton vote a bien été enregistré ! 💗");
-      setSelectedPlayer(null);
+  setMessage("Le vote n'a pas pu être enregistré. Vérifie que le vote est ouvert.");
+} else {
+  const currentRound = matches.find((m) => m.id === selectedMatch)?.vote_round ?? 1;
+
+  localStorage.setItem(`vote-match-${selectedMatch}-${currentRound}`, "done");
+
+  setAlreadyVoted(true);
+  setMessage("Ton vote a bien été enregistré ! 💗");
+  setSelectedPlayer(null);
+}
     }
   }
 
