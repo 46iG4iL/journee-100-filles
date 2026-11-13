@@ -123,7 +123,57 @@ export default function AdminPage() {
 
     setLoading(false);
   }
+async function resetMatch(matchId: number) {
+  const confirmed = window.confirm(
+    "Attention ! Tous les votes de ce match seront supprimés. Continuer ?"
+  );
 
+  if (!confirmed) return;
+
+  setLoading(true);
+  setMessage("");
+
+  const { error } = await supabase.rpc("admin_reset_match", {
+    p_match_id: matchId,
+  });
+
+  if (error) {
+    setMessage("Erreur lors de la réinitialisation : " + error.message);
+  } else {
+    setMessage("Le match a été réinitialisé avec succès ! 💗");
+    setResults((previous) => {
+      const updated = { ...previous };
+      delete updated[matchId];
+      return updated;
+    });
+    await loadMatches();
+  }
+
+  setLoading(false);
+}
+
+async function resetAllMatches() {
+  const confirmed = window.confirm(
+    "ATTENTION ! Tous les votes des 3 matchs seront définitivement supprimés. Continuer ?"
+  );
+
+  if (!confirmed) return;
+
+  setLoading(true);
+  setMessage("");
+
+  const { error } = await supabase.rpc("admin_reset_all_matches");
+
+  if (error) {
+    setMessage("Erreur lors de la réinitialisation : " + error.message);
+  } else {
+    setMessage("Les trois matchs ont été réinitialisés ! 💗");
+    setResults({});
+    await loadMatches();
+  }
+
+  setLoading(false);
+}
   return (
     <main style={{
       minHeight: "100vh",
@@ -184,6 +234,17 @@ export default function AdminPage() {
             </div>
 
             {matches.map((match) => (
+            <button
+  disabled={loading}
+  onClick={resetAllMatches}
+  style={{
+    ...buttonStyle,
+    background: "#a82050",
+    marginBottom: 25
+  }}
+>
+  🧹 TOUT RÉINITIALISER
+</button>
               <section key={match.id} style={{
                 background: "#171217",
                 padding: 22,
