@@ -278,3 +278,11 @@ footer {
 .rank-3 {
   border: 1px solid #cd7f32;
 }
+.club-logo {
+  width: 120px;
+  max-width: 40%;
+  height: auto;
+  object-fit: contain;
+  display: block;
+  margin: 20px auto;
+}
