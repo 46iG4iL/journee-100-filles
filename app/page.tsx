@@ -140,8 +140,15 @@ useEffect(() => {
   return (
     <main className="page">
       <header className="hero">
+        <img
+  src="/logo-club.png"
+  alt="Logo du club"
+  className="club-logo"
+/>
         <p className="eyebrow">ÉVÉNEMENT 100% FÉMININ</p>
-        <h1>JOURNÉE<br /><span>100% FILLES</span></h1>
+        <h1>VOTE POUR TA<br />
+  <span>LOUVE DU MATCH</span>
+</h1>
         <p className="subtitle">À vous de choisir la joueuse du match !</p>
       </header>
 
@@ -234,7 +241,14 @@ useEffect(() => {
         )}
       </section>
 
-      <footer>JOURNÉE 100% FILLES · HANDBALL 💗</footer>
+      <footer>
+  <img
+    src="/logo-club.png"
+    alt="Logo du club"
+    className="club-logo"
+  />
+  <p>JOURNÉE 100% FILLES · HANDBALL 💗</p>
+</footer>
     </main>
   );
 }
