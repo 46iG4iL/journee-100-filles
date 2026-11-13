@@ -338,8 +338,9 @@ async function resetAllMatches() {
                   </div>
                 )}
               </section>
-            ))}
+                     ))}
           </>
+        )}
 
         {message && (
           <p style={{
