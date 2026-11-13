@@ -329,6 +329,17 @@ async function resetAllMatches() {
             ))}
           </>
         )}
+      <button
+  disabled={loading}
+  onClick={() => resetMatch(match.id)}
+  style={{
+    ...smallButtonStyle,
+    borderColor: "#ff3f91",
+    color: "#ff3f91"
+  }}
+>
+  🔄 RÉINITIALISER CE MATCH
+</button>
 
         {message && (
           <p style={{
