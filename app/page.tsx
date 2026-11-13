@@ -109,6 +109,7 @@ async function submitVote() {
   const currentMatch = matches.find((m) => m.id === selectedMatch);
 
 useEffect(() => {
+  
   async function loadResults() {
     if (!selectedMatch || !currentMatch?.results_revealed) {
       setResults([]);
