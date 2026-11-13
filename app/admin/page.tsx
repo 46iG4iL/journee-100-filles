@@ -233,8 +233,7 @@ async function resetAllMatches() {
               </button>
             </div>
 
-            {matches.map((match) => (
-            <button
+           <button
   disabled={loading}
   onClick={resetAllMatches}
   style={{
@@ -245,6 +244,8 @@ async function resetAllMatches() {
 >
   🧹 TOUT RÉINITIALISER
 </button>
+            {matches.map((match) => (
+            
               <section key={match.id} style={{
                 background: "#171217",
                 padding: 22,
@@ -306,6 +307,17 @@ async function resetAllMatches() {
                 >
                   CONSULTER LES RÉSULTATS EN PRIVÉ
                 </button>
+                <button
+  disabled={loading}
+  onClick={() => resetMatch(match.id)}
+  style={{
+    ...smallButtonStyle,
+    borderColor: "#ff3f91",
+    color: "#ff3f91"
+  }}
+>
+  🔄 RÉINITIALISER CE MATCH
+</button>
 
                 {results[match.id] && (
                   <div style={{ marginTop: 18 }}>
@@ -328,18 +340,6 @@ async function resetAllMatches() {
               </section>
             ))}
           </>
-        )}
-      <button
-  disabled={loading}
-  onClick={() => resetMatch(match.id)}
-  style={{
-    ...smallButtonStyle,
-    borderColor: "#ff3f91",
-    color: "#ff3f91"
-  }}
->
-  🔄 RÉINITIALISER CE MATCH
-</button>
 
         {message && (
           <p style={{
