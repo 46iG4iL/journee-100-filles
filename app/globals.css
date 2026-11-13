@@ -221,3 +221,60 @@ footer {
     padding: 16px;
   }
 }
+.results {
+  margin-top: 25px;
+  padding: 20px;
+  background: #171017;
+  border: 1px solid #ec4899;
+  border-radius: 18px;
+}
+
+.results h3 {
+  color: #ff69b4;
+  text-align: center;
+  margin-bottom: 20px;
+  letter-spacing: 2px;
+}
+
+.results-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.result-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px;
+  background: #251a25;
+  border-radius: 12px;
+  color: white;
+}
+
+.result-rank {
+  font-size: 24px;
+}
+
+.result-name {
+  flex: 1;
+  font-weight: bold;
+}
+
+.result-votes {
+  color: #ff8bc5;
+  font-weight: bold;
+}
+
+.rank-1 {
+  border: 2px solid #ffd700;
+  background: #382c19;
+}
+
+.rank-2 {
+  border: 1px solid #c0c0c0;
+}
+
+.rank-3 {
+  border: 1px solid #cd7f32;
+}
