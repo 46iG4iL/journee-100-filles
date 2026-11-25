@@ -42,10 +42,23 @@ type Player = {
 };
 
 type Result = {
+  
   player_number: number;
   player_name: string;
   vote_count: number;
 };
+type EditableEventField =
+  | "name"
+  | "eyebrow"
+  | "main_title"
+  | "subtitle"
+  | "footer_text"
+  | "logo_url"
+  | "theme_primary"
+  | "theme_secondary"
+  | "theme_background"
+  | "theme_card"
+  | "theme_text";
 
 const panelStyle = {
   background: "#171217",
@@ -248,7 +261,7 @@ export default function AdminPage() {
     setLoading(false);
   }
 
-  function updateEventField(field: keyof Event, value: string) {
+  function updateEventField(field: EditableEventField, value: string) {
     if (!activeEvent) return;
     setActiveEvent({ ...activeEvent, [field]: value });
   }
@@ -489,7 +502,7 @@ export default function AdminPage() {
 
   const field = (
     label: string,
-    key: keyof Event,
+    key: EditableEventField,
     type = "text"
   ) => (
     <label style={{ display: "block", marginBottom: "8px" }}>
