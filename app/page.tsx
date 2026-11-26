@@ -23,7 +23,6 @@ type Event = {
   theme_card: string;
   theme_text: string;
   logo_url: string | null;
-  is_active: boolean;
 };
 
 type Match = {
@@ -49,7 +48,7 @@ type Result = {
 };
 
 export default function Home() {
-  const [activeEvent, setActiveEvent] = useState<Event | null>(null);
+  const [event, setEvent] = useState<Event | null>(null);
   const [matches, setMatches] = useState<Match[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [results, setResults] = useState<Result[]>([]);
@@ -62,43 +61,44 @@ export default function Home() {
 
   useEffect(() => {
     async function loadData() {
-      setLoading(true);
+      try {
+        const { data: eventData, error: eventError } = await supabase
+          .from("events")
+          .select("*")
+          .eq("is_active", true)
+          .maybeSingle();
 
-      const { data: eventData, error: eventError } = await supabase
-        .from("events")
-        .select("*")
-        .eq("is_active", true)
-        .maybeSingle();
+        if (eventError) {
+          setMessage("Impossible de charger l'événement.");
+          return;
+        }
 
-      if (eventError || !eventData) {
-        setMessage(
-          eventError
-            ? "Impossible de charger l'événement."
-            : "Aucun événement n'est disponible pour le moment."
-        );
-        setLoading(false);
-        return;
-      }
+        if (!eventData) {
+          setMessage("Aucun événement n'est actuellement disponible.");
+          return;
+        }
 
-      const event = eventData as Event;
-      setActiveEvent(event);
+        setEvent(eventData);
 
-      const { data: matchData, error: matchError } = await supabase
-        .from("matches")
-        .select("*")
-        .eq("event_id", event.id)
-        .order("id");
+        const { data: matchData, error: matchError } = await supabase
+          .from("matches")
+          .select("*")
+          .eq("event_id", eventData.id)
+          .order("id");
 
-      if (matchError) {
-        setMessage("Impossible de charger les matchs.");
-        setLoading(false);
-        return;
-      }
+        if (matchError) {
+          setMessage("Impossible de charger les matchs.");
+          return;
+        }
 
-      const loadedMatches = (matchData || []) as Match[];
-      setMatches(loadedMatches);
+        const loadedMatches = matchData || [];
+        setMatches(loadedMatches);
 
-      if (loadedMatches.length > 0) {
+        if (loadedMatches.length === 0) {
+          setPlayers([]);
+          return;
+        }
+
         const matchIds = loadedMatches.map((match) => match.id);
 
         const { data: playerData, error: playerError } = await supabase
@@ -109,40 +109,71 @@ export default function Home() {
 
         if (playerError) {
           setMessage("Impossible de charger les joueuses.");
-          setLoading(false);
           return;
         }
 
-        setPlayers((playerData || []) as Player[]);
-      } else {
-        setPlayers([]);
+        setPlayers(playerData || []);
+      } finally {
+        setLoading(false);
       }
-
-      setLoading(false);
     }
 
     loadData();
   }, []);
 
+  useEffect(() => {
+    if (selectedMatch !== null && event) {
+      setSelectedPlayer(null);
+      setMessage("");
+
+      const currentRound =
+        matches.find((m) => m.id === selectedMatch)?.vote_round ?? 1;
+
+      setAlreadyVoted(
+        localStorage.getItem(
+          `vote-event-${event.id}-match-${selectedMatch}-${currentRound}`
+        ) === "done"
+      );
+    }
+  }, [selectedMatch, matches, event]);
+
   const currentMatch = matches.find((m) => m.id === selectedMatch);
 
-  useEffect(() => {
-    if (selectedMatch === null || !activeEvent) {
-      setSelectedPlayer(null);
-      setAlreadyVoted(false);
+  async function submitVote() {
+    if (!selectedMatch || !selectedPlayer || !event || !currentMatch) return;
+
+    if (!currentMatch.voting_open) {
+      setMessage("Le vote est fermé pour ce match.");
       return;
     }
 
-    setSelectedPlayer(null);
-    setMessage("");
+    if (alreadyVoted) {
+      setMessage("Un vote a déjà été enregistré sur cet appareil pour ce match.");
+      return;
+    }
 
-    const currentRound =
-      matches.find((m) => m.id === selectedMatch)?.vote_round ?? 1;
+    const { error } = await supabase.from("votes").insert({
+      match_id: selectedMatch,
+      player_id: selectedPlayer,
+    });
 
-    const voteKey = `vote-event-${activeEvent.id}-match-${selectedMatch}-${currentRound}`;
+    if (error) {
+      setMessage(
+        "Le vote n'a pas pu être enregistré. Vérifie que le vote est ouvert."
+      );
+    } else {
+      const currentRound = currentMatch.vote_round ?? 1;
 
-    setAlreadyVoted(localStorage.getItem(voteKey) === "done");
-  }, [selectedMatch, matches, activeEvent]);
+      localStorage.setItem(
+        `vote-event-${event.id}-match-${selectedMatch}-${currentRound}`,
+        "done"
+      );
+
+      setAlreadyVoted(true);
+      setMessage("Ton vote a bien été enregistré ! 💗");
+      setSelectedPlayer(null);
+    }
+  }
 
   useEffect(() => {
     async function loadResults() {
@@ -161,7 +192,7 @@ export default function Home() {
         setMessage("Impossible de charger les résultats.");
         setResults([]);
       } else {
-        setResults((data || []) as Result[]);
+        setResults(data || []);
       }
 
       setResultsLoading(false);
@@ -170,86 +201,48 @@ export default function Home() {
     loadResults();
   }, [selectedMatch, currentMatch?.results_revealed]);
 
-  async function submitVote() {
-    if (!selectedMatch || !selectedPlayer || !activeEvent) return;
-
-    if (alreadyVoted) {
-      setMessage(
-        "Un vote a déjà été enregistré sur cet appareil pour ce match."
-      );
-      return;
-    }
-
-    const { error } = await supabase.from("votes").insert({
-      match_id: selectedMatch,
-      player_id: selectedPlayer,
-    });
-
-    if (error) {
-      setMessage(
-        "Le vote n'a pas pu être enregistré. Vérifie que le vote est ouvert."
-      );
-    } else {
-      const currentRound =
-        matches.find((m) => m.id === selectedMatch)?.vote_round ?? 1;
-
-      const voteKey = `vote-event-${activeEvent.id}-match-${selectedMatch}-${currentRound}`;
-
-      localStorage.setItem(voteKey, "done");
-      setAlreadyVoted(true);
-      setMessage("Ton vote a bien été enregistré ! 💗");
-      setSelectedPlayer(null);
-    }
-  }
-
   const currentPlayers = players.filter(
     (player) => player.match_id === selectedMatch
   );
 
-  const pageStyle = activeEvent
-    ? ({
-        "--pink": activeEvent.theme_primary || "#ff3f91",
-        "--pink-light": activeEvent.theme_secondary || "#ff80b5",
-        "--black": activeEvent.theme_background || "#090909",
-        "--card": activeEvent.theme_card || "#171217",
-        "--white": activeEvent.theme_text || "#ffffff",
-      } as CSSProperties)
-    : undefined;
+  const logo = event?.logo_url?.trim() || "/logo-club.png";
 
-  const logo = activeEvent?.logo_url || "/logo-club.png";
+  const pageStyle: CSSProperties = {
+    "--pink": event?.theme_primary || "#ff3f91",
+    "--pink-light": event?.theme_secondary || "#ff80b5",
+    "--black": event?.theme_background || "#090909",
+    "--card": event?.theme_card || "#171217",
+    "--white": event?.theme_text || "#ffffff",
+  } as CSSProperties;
 
   return (
     <main className="page" style={pageStyle}>
       {loading ? (
-        <div className="loading-screen">
+        <section className="content">
           <p>Chargement de l'événement...</p>
-        </div>
-      ) : !activeEvent ? (
-        <div className="loading-screen">
-          <h1>Pas d'événement pour le moment</h1>
-          <p>{message}</p>
-        </div>
+        </section>
+      ) : !event ? (
+        <section className="content">
+          <h2>Oups !</h2>
+          <p>{message || "Aucun événement n'est disponible pour le moment."}</p>
+        </section>
       ) : (
         <>
           <header className="hero">
-            <img
-              src={logo}
-              alt="Logo de l'événement"
-              className="club-logo"
-            />
+            <img src={logo} alt="Logo du club" className="club-logo" />
 
-            <p className="eyebrow">{activeEvent.eyebrow}</p>
+            <p className="eyebrow">{event.eyebrow}</p>
 
-            <h1>{activeEvent.main_title}</h1>
+            <h1>{event.main_title}</h1>
 
-            <p className="subtitle">{activeEvent.subtitle}</p>
+            <p className="subtitle">{event.subtitle}</p>
           </header>
 
           <section className="content">
             <h2>Les matchs</h2>
 
             {matches.length === 0 ? (
-              <p>Aucun match n'est encore disponible.</p>
+              <p>Aucun match n'a encore été ajouté à cet événement.</p>
             ) : (
               <div className="match-list">
                 {matches.map((match) => (
@@ -290,7 +283,7 @@ export default function Home() {
                         {results.map((result, index) => (
                           <div
                             className={`result-card rank-${index + 1}`}
-                            key={`${result.player_number}-${index}`}
+                            key={result.player_number}
                           >
                             <span className="result-rank">
                               {index === 0
@@ -301,9 +294,11 @@ export default function Home() {
                                 ? "🥉"
                                 : `${index + 1}.`}
                             </span>
+
                             <span className="result-name">
                               #{result.player_number} {result.player_name}
                             </span>
+
                             <span className="result-votes">
                               {result.vote_count} vote
                               {result.vote_count > 1 ? "s" : ""}
@@ -314,9 +309,7 @@ export default function Home() {
                     )}
                   </div>
                 ) : !currentMatch.voting_open ? (
-                  <p>
-                    Le vote pour ce match n'est pas ouvert pour le moment.
-                  </p>
+                  <p>Le vote pour ce match n'est pas ouvert pour le moment.</p>
                 ) : alreadyVoted ? (
                   <p>
                     Merci ! Ton vote a déjà été enregistré pour ce match 💗
@@ -360,12 +353,8 @@ export default function Home() {
           </section>
 
           <footer>
-            <img
-              src={logo}
-              alt="Logo de l'événement"
-              className="club-logo"
-            />
-            <p>{activeEvent.footer_text}</p>
+            <img src={logo} alt="Logo du club" className="club-logo" />
+            <p>{event.footer_text}</p>
           </footer>
         </>
       )}
