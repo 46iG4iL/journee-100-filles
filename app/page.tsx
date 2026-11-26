@@ -60,26 +60,22 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [alreadyVoted, setAlreadyVoted] = useState(false);
 
-  // Charger uniquement l'événement actif et ses propres matchs
   useEffect(() => {
     async function loadData() {
+      setLoading(true);
+
       const { data: eventData, error: eventError } = await supabase
         .from("events")
         .select("*")
         .eq("is_active", true)
         .maybeSingle();
 
-      if (eventError) {
-        setMessage("Impossible de charger l'événement. Réessaie plus tard.");
-        setLoading(false);
-        return;
-      }
-
-      if (!eventData) {
-        setActiveEvent(null);
-        setMatches([]);
-        setPlayers([]);
-        setMessage("Aucun événement n'est actuellement actif.");
+      if (eventError || !eventData) {
+        setMessage(
+          eventError
+            ? "Impossible de charger l'événement."
+            : "Aucun événement n'est disponible pour le moment."
+        );
         setLoading(false);
         return;
       }
@@ -94,7 +90,7 @@ export default function Home() {
         .order("id");
 
       if (matchError) {
-        setMessage("Impossible de charger les matchs. Réessaie plus tard.");
+        setMessage("Impossible de charger les matchs.");
         setLoading(false);
         return;
       }
@@ -102,24 +98,24 @@ export default function Home() {
       const loadedMatches = (matchData || []) as Match[];
       setMatches(loadedMatches);
 
-      if (loadedMatches.length === 0) {
-        setPlayers([]);
-        setLoading(false);
-        return;
-      }
+      if (loadedMatches.length > 0) {
+        const matchIds = loadedMatches.map((match) => match.id);
 
-      const matchIds = loadedMatches.map((match) => match.id);
+        const { data: playerData, error: playerError } = await supabase
+          .from("players")
+          .select("*")
+          .in("match_id", matchIds)
+          .order("jersey_number");
 
-      const { data: playerData, error: playerError } = await supabase
-        .from("players")
-        .select("*")
-        .in("match_id", matchIds)
-        .order("jersey_number");
+        if (playerError) {
+          setMessage("Impossible de charger les joueuses.");
+          setLoading(false);
+          return;
+        }
 
-      if (playerError) {
-        setMessage("Impossible de charger les joueuses. Réessaie plus tard.");
-      } else {
         setPlayers((playerData || []) as Player[]);
+      } else {
+        setPlayers([]);
       }
 
       setLoading(false);
@@ -128,60 +124,26 @@ export default function Home() {
     loadData();
   }, []);
 
-  // Vérifier si un vote a déjà été enregistré sur cet appareil
+  const currentMatch = matches.find((m) => m.id === selectedMatch);
+
   useEffect(() => {
-    if (selectedMatch !== null) {
+    if (selectedMatch === null || !activeEvent) {
       setSelectedPlayer(null);
-      setMessage("");
-
-      const currentRound =
-        matches.find((m) => m.id === selectedMatch)?.vote_round ?? 1;
-
-      setAlreadyVoted(
-        localStorage.getItem(
-          `vote-match-${selectedMatch}-${currentRound}`
-        ) === "done"
-      );
-    }
-  }, [selectedMatch, matches]);
-
-  async function submitVote() {
-    if (!selectedMatch || !selectedPlayer) return;
-
-    if (alreadyVoted) {
-      setMessage(
-        "Un vote a déjà été enregistré sur cet appareil pour ce match."
-      );
+      setAlreadyVoted(false);
       return;
     }
 
-    const { error } = await supabase.from("votes").insert({
-      match_id: selectedMatch,
-      player_id: selectedPlayer,
-    });
+    setSelectedPlayer(null);
+    setMessage("");
 
-    if (error) {
-      setMessage(
-        "Le vote n'a pas pu être enregistré. Vérifie que le vote est ouvert."
-      );
-    } else {
-      const currentRound =
-        matches.find((m) => m.id === selectedMatch)?.vote_round ?? 1;
+    const currentRound =
+      matches.find((m) => m.id === selectedMatch)?.vote_round ?? 1;
 
-      localStorage.setItem(
-        `vote-match-${selectedMatch}-${currentRound}`,
-        "done"
-      );
+    const voteKey = `vote-event-${activeEvent.id}-match-${selectedMatch}-${currentRound}`;
 
-      setAlreadyVoted(true);
-      setMessage("Ton vote a bien été enregistré ! 💗");
-      setSelectedPlayer(null);
-    }
-  }
+    setAlreadyVoted(localStorage.getItem(voteKey) === "done");
+  }, [selectedMatch, matches, activeEvent]);
 
-  const currentMatch = matches.find((m) => m.id === selectedMatch);
-
-  // Charger les résultats uniquement quand ils ont été révélés
   useEffect(() => {
     async function loadResults() {
       if (!selectedMatch || !currentMatch?.results_revealed) {
@@ -208,179 +170,205 @@ export default function Home() {
     loadResults();
   }, [selectedMatch, currentMatch?.results_revealed]);
 
+  async function submitVote() {
+    if (!selectedMatch || !selectedPlayer || !activeEvent) return;
+
+    if (alreadyVoted) {
+      setMessage(
+        "Un vote a déjà été enregistré sur cet appareil pour ce match."
+      );
+      return;
+    }
+
+    const { error } = await supabase.from("votes").insert({
+      match_id: selectedMatch,
+      player_id: selectedPlayer,
+    });
+
+    if (error) {
+      setMessage(
+        "Le vote n'a pas pu être enregistré. Vérifie que le vote est ouvert."
+      );
+    } else {
+      const currentRound =
+        matches.find((m) => m.id === selectedMatch)?.vote_round ?? 1;
+
+      const voteKey = `vote-event-${activeEvent.id}-match-${selectedMatch}-${currentRound}`;
+
+      localStorage.setItem(voteKey, "done");
+      setAlreadyVoted(true);
+      setMessage("Ton vote a bien été enregistré ! 💗");
+      setSelectedPlayer(null);
+    }
+  }
+
   const currentPlayers = players.filter(
     (player) => player.match_id === selectedMatch
   );
 
-  // Les couleurs sont récupérées depuis l'événement actif
-  const themeStyle = {
-    "--pink": activeEvent?.theme_primary || "#ff3f91",
-    "--pink-light": activeEvent?.theme_secondary || "#ff80b5",
-    "--black": activeEvent?.theme_background || "#090909",
-    "--card": activeEvent?.theme_card || "#171217",
-    "--white": activeEvent?.theme_text || "#ffffff",
-    "--muted": "#b9aeb5",
-  } as CSSProperties;
+  const pageStyle = activeEvent
+    ? ({
+        "--pink": activeEvent.theme_primary || "#ff3f91",
+        "--pink-light": activeEvent.theme_secondary || "#ff80b5",
+        "--black": activeEvent.theme_background || "#090909",
+        "--card": activeEvent.theme_card || "#171217",
+        "--white": activeEvent.theme_text || "#ffffff",
+      } as CSSProperties)
+    : undefined;
 
   const logo = activeEvent?.logo_url || "/logo-club.png";
 
   return (
-    <main
-      className="page"
-      style={{
-        ...themeStyle,
-        backgroundColor: activeEvent?.theme_background || "#090909",
-        color: activeEvent?.theme_text || "#ffffff",
-      }}
-    >
-      <header className="hero">
-        <img
-          src={logo}
-          alt={`Logo de ${activeEvent?.name || "l'événement"}`}
-          className="club-logo"
-        />
+    <main className="page" style={pageStyle}>
+      {loading ? (
+        <div className="loading-screen">
+          <p>Chargement de l'événement...</p>
+        </div>
+      ) : !activeEvent ? (
+        <div className="loading-screen">
+          <h1>Pas d'événement pour le moment</h1>
+          <p>{message}</p>
+        </div>
+      ) : (
+        <>
+          <header className="hero">
+            <img
+              src={logo}
+              alt="Logo de l'événement"
+              className="club-logo"
+            />
 
-        <p className="eyebrow">
-          {activeEvent?.eyebrow || "ÉVÉNEMENT"}
-        </p>
+            <p className="eyebrow">{activeEvent.eyebrow}</p>
 
-        <h1>{activeEvent?.main_title || "VOTE POUR TA LOUVE DU MATCH"}</h1>
+            <h1>{activeEvent.main_title}</h1>
 
-        <p className="subtitle">
-          {activeEvent?.subtitle || "À vous de choisir !"}
-        </p>
-      </header>
+            <p className="subtitle">{activeEvent.subtitle}</p>
+          </header>
 
-      <section className="content">
-        <h2>Les matchs</h2>
+          <section className="content">
+            <h2>Les matchs</h2>
 
-        {loading ? (
-          <p>Chargement des matchs...</p>
-        ) : matches.length === 0 ? (
-          <p>
-            {activeEvent
-              ? "Aucun match n'a encore été ajouté à cet événement."
-              : message || "Aucun événement actif pour le moment."}
-          </p>
-        ) : (
-          <div className="match-list">
-            {matches.map((match) => (
-              <button
-                key={match.id}
-                className={`match-card ${
-                  selectedMatch === match.id ? "active" : ""
-                }`}
-                onClick={() => setSelectedMatch(match.id)}
-              >
-                <span>{match.title}</span>
-                <span className="status">
-                  {match.results_revealed
-                    ? "Résultats disponibles"
-                    : match.voting_open
-                    ? "Vote ouvert"
-                    : "Vote fermé"}
-                </span>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {currentMatch && (
-          <div className="voting">
-            <h2>{currentMatch.title}</h2>
-
-            {currentMatch.results_revealed ? (
-              <div className="results">
-                <h3>🏆 CLASSEMENT DU MATCH</h3>
-
-                {resultsLoading ? (
-                  <p>Chargement du classement...</p>
-                ) : results.length === 0 ? (
-                  <p>Aucun résultat disponible.</p>
-                ) : (
-                  <div className="results-list">
-                    {results.map((result, index) => (
-                      <div
-                        className={`result-card rank-${index + 1}`}
-                        key={result.player_number}
-                      >
-                        <span className="result-rank">
-                          {index === 0
-                            ? "🥇"
-                            : index === 1
-                            ? "🥈"
-                            : index === 2
-                            ? "🥉"
-                            : `${index + 1}.`}
-                        </span>
-
-                        <span className="result-name">
-                          #{result.player_number} {result.player_name}
-                        </span>
-
-                        <span className="result-votes">
-                          {result.vote_count} vote
-                          {result.vote_count > 1 ? "s" : ""}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ) : !currentMatch.voting_open ? (
-              <p>Le vote pour ce match n'est pas ouvert pour le moment.</p>
-            ) : alreadyVoted ? (
-              <p>
-                Merci ! Ton vote a déjà été enregistré pour ce match 💗
-              </p>
+            {matches.length === 0 ? (
+              <p>Aucun match n'est encore disponible.</p>
             ) : (
-              <>
-                <p className="instruction">
-                  Sélectionne ta joueuse préférée :
-                </p>
-
-                <div className="player-list">
-                  {currentPlayers.map((player) => (
-                    <button
-                      key={player.id}
-                      className={`player-card ${
-                        selectedPlayer === player.id ? "chosen" : ""
-                      }`}
-                      onClick={() => setSelectedPlayer(player.id)}
-                    >
-                      <span className="number">
-                        #{player.jersey_number}
-                      </span>
-                      <span>{player.name}</span>
-                    </button>
-                  ))}
-                </div>
-
-                <button
-                  className="vote-button"
-                  disabled={!selectedPlayer}
-                  onClick={submitVote}
-                >
-                  VALIDER MON VOTE
-                </button>
-              </>
+              <div className="match-list">
+                {matches.map((match) => (
+                  <button
+                    key={match.id}
+                    className={`match-card ${
+                      selectedMatch === match.id ? "active" : ""
+                    }`}
+                    onClick={() => setSelectedMatch(match.id)}
+                  >
+                    <span>{match.title}</span>
+                    <span className="status">
+                      {match.results_revealed
+                        ? "Résultats disponibles"
+                        : match.voting_open
+                        ? "Vote ouvert"
+                        : "Vote fermé"}
+                    </span>
+                  </button>
+                ))}
+              </div>
             )}
 
-            {message && <p className="message">{message}</p>}
-          </div>
-        )}
-      </section>
+            {currentMatch && (
+              <div className="voting">
+                <h2>{currentMatch.title}</h2>
 
-      <footer>
-        <img
-          src={logo}
-          alt={`Logo de ${activeEvent?.name || "l'événement"}`}
-          className="club-logo"
-        />
-        <p>
-          {activeEvent?.footer_text || "Merci de participer à notre événement 💗"}
-        </p>
-      </footer>
+                {currentMatch.results_revealed ? (
+                  <div className="results">
+                    <h3>🏆 CLASSEMENT DU MATCH</h3>
+
+                    {resultsLoading ? (
+                      <p>Chargement du classement...</p>
+                    ) : results.length === 0 ? (
+                      <p>Aucun résultat disponible.</p>
+                    ) : (
+                      <div className="results-list">
+                        {results.map((result, index) => (
+                          <div
+                            className={`result-card rank-${index + 1}`}
+                            key={`${result.player_number}-${index}`}
+                          >
+                            <span className="result-rank">
+                              {index === 0
+                                ? "🥇"
+                                : index === 1
+                                ? "🥈"
+                                : index === 2
+                                ? "🥉"
+                                : `${index + 1}.`}
+                            </span>
+                            <span className="result-name">
+                              #{result.player_number} {result.player_name}
+                            </span>
+                            <span className="result-votes">
+                              {result.vote_count} vote
+                              {result.vote_count > 1 ? "s" : ""}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : !currentMatch.voting_open ? (
+                  <p>
+                    Le vote pour ce match n'est pas ouvert pour le moment.
+                  </p>
+                ) : alreadyVoted ? (
+                  <p>
+                    Merci ! Ton vote a déjà été enregistré pour ce match 💗
+                  </p>
+                ) : (
+                  <>
+                    <p className="instruction">
+                      Sélectionne ta joueuse préférée :
+                    </p>
+
+                    <div className="player-list">
+                      {currentPlayers.map((player) => (
+                        <button
+                          key={player.id}
+                          className={`player-card ${
+                            selectedPlayer === player.id ? "chosen" : ""
+                          }`}
+                          onClick={() => setSelectedPlayer(player.id)}
+                        >
+                          <span className="number">
+                            #{player.jersey_number}
+                          </span>
+                          <span>{player.name}</span>
+                        </button>
+                      ))}
+                    </div>
+
+                    <button
+                      className="vote-button"
+                      disabled={!selectedPlayer}
+                      onClick={submitVote}
+                    >
+                      VALIDER MON VOTE
+                    </button>
+                  </>
+                )}
+
+                {message && <p className="message">{message}</p>}
+              </div>
+            )}
+          </section>
+
+          <footer>
+            <img
+              src={logo}
+              alt="Logo de l'événement"
+              className="club-logo"
+            />
+            <p>{activeEvent.footer_text}</p>
+          </footer>
+        </>
+      )}
     </main>
   );
 }
