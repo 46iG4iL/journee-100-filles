@@ -29,9 +29,30 @@ button {
 
 .page {
   min-height: 100vh;
+  color: var(--white);
   background:
-    radial-gradient(ellipse at 50% 0%, #48152f 0%, transparent 45%),
+    radial-gradient(
+      ellipse at 50% 0%,
+      color-mix(in srgb, var(--pink) 22%, transparent) 0%,
+      transparent 55%
+    ),
     var(--black);
+}
+
+.loading-screen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  padding: 30px;
+  text-align: center;
+}
+
+.loading-screen h1 {
+  font-family: 'Barlow Condensed', sans-serif;
+  text-transform: uppercase;
 }
 
 .hero {
@@ -51,12 +72,10 @@ button {
   font-family: 'Barlow Condensed', sans-serif;
   font-size: clamp(55px, 12vw, 105px);
   font-weight: 900;
-  line-height: 0.85;
+  line-height: 0.95;
   letter-spacing: -2px;
-}
-
-.hero h1 span {
-  color: var(--pink);
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
 }
 
 .subtitle {
@@ -91,9 +110,9 @@ button {
   gap: 12px;
   padding: 20px;
   background: var(--card);
-  border: 1px solid #382331;
+  border: 1px solid color-mix(in srgb, var(--pink) 25%, transparent);
   border-radius: 14px;
-  color: white;
+  color: var(--white);
   text-align: left;
   transition: 0.2s;
 }
@@ -101,7 +120,7 @@ button {
 .match-card:hover,
 .match-card.active {
   border-color: var(--pink);
-  background: #281322;
+  background: color-mix(in srgb, var(--pink) 14%, var(--card));
 }
 
 .match-card > span:first-child {
@@ -117,7 +136,7 @@ button {
 .voting {
   margin-top: 40px;
   padding: 24px;
-  border: 1px solid #382331;
+  border: 1px solid color-mix(in srgb, var(--pink) 25%, transparent);
   border-radius: 18px;
   background: var(--card);
 }
@@ -139,10 +158,10 @@ button {
   gap: 13px;
   width: 100%;
   padding: 14px;
-  color: white;
+  color: var(--white);
   text-align: left;
-  background: #211a20;
-  border: 1px solid #392a35;
+  background: color-mix(in srgb, var(--card) 75%, var(--black));
+  border: 1px solid color-mix(in srgb, var(--pink) 20%, transparent);
   border-radius: 10px;
   font-size: 12px;
   font-weight: 700;
@@ -152,7 +171,7 @@ button {
 .player-card:hover,
 .player-card.chosen {
   border-color: var(--pink);
-  background: #421a32;
+  background: color-mix(in srgb, var(--pink) 20%, var(--card));
 }
 
 .number {
@@ -169,14 +188,14 @@ button {
   border: none;
   border-radius: 10px;
   background: var(--pink);
-  color: white;
+  color: var(--white);
   font-weight: 900;
   letter-spacing: 1px;
   transition: 0.2s;
 }
 
 .vote-button:hover:not(:disabled) {
-  background: #ff69a8;
+  background: var(--pink-light);
   transform: translateY(-2px);
 }
 
@@ -198,9 +217,76 @@ button {
   line-height: 1.7;
 }
 
+.results {
+  margin-top: 25px;
+  padding: 20px;
+  background: var(--card);
+  border: 1px solid var(--pink);
+  border-radius: 18px;
+}
+
+.results h3 {
+  color: var(--pink-light);
+  text-align: center;
+  margin-bottom: 20px;
+  letter-spacing: 2px;
+}
+
+.results-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.result-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px;
+  background: color-mix(in srgb, var(--card) 75%, var(--black));
+  border-radius: 12px;
+  color: var(--white);
+}
+
+.result-rank {
+  font-size: 24px;
+}
+
+.result-name {
+  flex: 1;
+  font-weight: bold;
+}
+
+.result-votes {
+  color: var(--pink-light);
+  font-weight: bold;
+}
+
+.rank-1 {
+  border: 2px solid #ffd700;
+  background: #382c19;
+}
+
+.rank-2 {
+  border: 1px solid #c0c0c0;
+}
+
+.rank-3 {
+  border: 1px solid #cd7f32;
+}
+
+.club-logo {
+  width: 120px;
+  max-width: 40%;
+  height: auto;
+  object-fit: contain;
+  display: block;
+  margin: 20px auto;
+}
+
 footer {
   padding: 25px 15px;
-  border-top: 1px solid #30212b;
+  border-top: 1px solid color-mix(in srgb, var(--pink) 25%, transparent);
   color: var(--muted);
   font-size: 10px;
   font-weight: 700;
@@ -220,69 +306,8 @@ footer {
   .match-card {
     padding: 16px;
   }
-}
-.results {
-  margin-top: 25px;
-  padding: 20px;
-  background: #171017;
-  border: 1px solid #ec4899;
-  border-radius: 18px;
-}
 
-.results h3 {
-  color: #ff69b4;
-  text-align: center;
-  margin-bottom: 20px;
-  letter-spacing: 2px;
-}
-
-.results-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.result-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 15px;
-  background: #251a25;
-  border-radius: 12px;
-  color: white;
-}
-
-.result-rank {
-  font-size: 24px;
-}
-
-.result-name {
-  flex: 1;
-  font-weight: bold;
-}
-
-.result-votes {
-  color: #ff8bc5;
-  font-weight: bold;
-}
-
-.rank-1 {
-  border: 2px solid #ffd700;
-  background: #382c19;
-}
-
-.rank-2 {
-  border: 1px solid #c0c0c0;
-}
-
-.rank-3 {
-  border: 1px solid #cd7f32;
-}
-.club-logo {
-  width: 120px;
-  max-width: 40%;
-  height: auto;
-  object-fit: contain;
-  display: block;
-  margin: 20px auto;
+  .result-card {
+    flex-wrap: wrap;
+  }
 }
