@@ -616,7 +616,7 @@ export default function AdminPage() {
                   ["Fond de page", "theme_background"],
                   ["Fond des cartes", "theme_card"],
                   ["Couleur du texte", "theme_text"],
-                ] as [string, keyof Event][]).map(([label, key]) => (
+                ] as [string, EditableEventField][]).map(([label, key]) => (
                   <label key={key}>
                     {label}
                     <input
