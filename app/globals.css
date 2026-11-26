@@ -29,30 +29,14 @@ button {
 
 .page {
   min-height: 100vh;
-  color: var(--white);
   background:
     radial-gradient(
       ellipse at 50% 0%,
-      color-mix(in srgb, var(--pink) 22%, transparent) 0%,
-      transparent 55%
+      color-mix(in srgb, var(--pink) 28%, transparent) 0%,
+      transparent 45%
     ),
     var(--black);
-}
-
-.loading-screen {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 15px;
-  padding: 30px;
-  text-align: center;
-}
-
-.loading-screen h1 {
-  font-family: 'Barlow Condensed', sans-serif;
-  text-transform: uppercase;
+  color: var(--white);
 }
 
 .hero {
@@ -74,6 +58,7 @@ button {
   font-weight: 900;
   line-height: 0.95;
   letter-spacing: -2px;
+  color: var(--pink);
   text-transform: uppercase;
   overflow-wrap: anywhere;
 }
@@ -110,7 +95,7 @@ button {
   gap: 12px;
   padding: 20px;
   background: var(--card);
-  border: 1px solid color-mix(in srgb, var(--pink) 25%, transparent);
+  border: 1px solid color-mix(in srgb, var(--pink) 22%, transparent);
   border-radius: 14px;
   color: var(--white);
   text-align: left;
@@ -120,7 +105,7 @@ button {
 .match-card:hover,
 .match-card.active {
   border-color: var(--pink);
-  background: color-mix(in srgb, var(--pink) 14%, var(--card));
+  background: color-mix(in srgb, var(--pink) 13%, var(--card));
 }
 
 .match-card > span:first-child {
@@ -160,7 +145,7 @@ button {
   padding: 14px;
   color: var(--white);
   text-align: left;
-  background: color-mix(in srgb, var(--card) 75%, var(--black));
+  background: color-mix(in srgb, var(--card) 65%, var(--black));
   border: 1px solid color-mix(in srgb, var(--pink) 20%, transparent);
   border-radius: 10px;
   font-size: 12px;
@@ -188,7 +173,7 @@ button {
   border: none;
   border-radius: 10px;
   background: var(--pink);
-  color: var(--white);
+  color: white;
   font-weight: 900;
   letter-spacing: 1px;
   transition: 0.2s;
@@ -217,6 +202,16 @@ button {
   line-height: 1.7;
 }
 
+footer {
+  padding: 25px 15px;
+  border-top: 1px solid color-mix(in srgb, var(--pink) 20%, transparent);
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-align: center;
+}
+
 .results {
   margin-top: 25px;
   padding: 20px;
@@ -243,7 +238,7 @@ button {
   align-items: center;
   gap: 12px;
   padding: 15px;
-  background: color-mix(in srgb, var(--card) 75%, var(--black));
+  background: color-mix(in srgb, var(--card) 65%, var(--black));
   border-radius: 12px;
   color: var(--white);
 }
@@ -284,19 +279,13 @@ button {
   margin: 20px auto;
 }
 
-footer {
-  padding: 25px 15px;
-  border-top: 1px solid color-mix(in srgb, var(--pink) 25%, transparent);
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 2px;
-  text-align: center;
-}
-
 @media (max-width: 480px) {
   .hero {
     padding-top: 55px;
+  }
+
+  .hero h1 {
+    font-size: clamp(45px, 12vw, 70px);
   }
 
   .voting {
